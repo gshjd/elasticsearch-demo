@@ -87,8 +87,6 @@ class ElasticSearchDemoApplicationTests {
         out(queryBuilder);
     }
 
-
-
     /**
      * 包含查询
      */
@@ -154,7 +152,7 @@ class ElasticSearchDemoApplicationTests {
     }
 
     @Test
-    public void save(){
+    public void save() {
         DemoDO demoDO = new DemoDO();
         demoDO.setDevice("phone");
         demoDO.setAge((int) (Math.random() * 10 + 1));
