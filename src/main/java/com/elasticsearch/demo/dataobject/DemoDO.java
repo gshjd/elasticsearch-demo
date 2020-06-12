@@ -2,15 +2,18 @@ package com.elasticsearch.demo.dataobject;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.util.Date;
 
-@Document(indexName = "demo", refreshInterval = "30s")
+@Document(indexName = "demo", refreshInterval = "30s", indexStoreType = "niofs", shards = 1, replicas = 0)
 public class DemoDO {
     @Id
     private String id;
     private String name;
     private Integer age;
+    @Field(type = FieldType.Keyword)
     private String nickName;
     private String device;
     private Date lastLoginDate;
