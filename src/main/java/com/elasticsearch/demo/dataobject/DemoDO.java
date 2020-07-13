@@ -7,8 +7,10 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.util.Date;
 
-@Document(indexName = "demo", refreshInterval = "30s", indexStoreType = "niofs", shards = 1, replicas = 0)
+@Document(indexName = "demo", refreshInterval = "30s", indexStoreType = "niofs", replicas = 0)
 public class DemoDO {
+    public static final String INDEX_NAME = "demo";
+    
     @Id
     private String id;
     private String name;

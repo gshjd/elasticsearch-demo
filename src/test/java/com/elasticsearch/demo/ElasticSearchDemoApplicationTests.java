@@ -1,33 +1,28 @@
 package com.elasticsearch.demo;
 
 import com.elasticsearch.demo.dataobject.DemoDO;
+import com.elasticsearch.demo.dataobject.DwsLabelDO;
 import com.elasticsearch.demo.repository.DemoRepository;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.Operator;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.sum.Sum;
-import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.Sum;
+import org.elasticsearch.search.aggregations.metrics.SumAggregationBuilder;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
-import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage;
-import org.springframework.data.elasticsearch.core.query.IndexQuery;
-import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
-import org.springframework.data.elasticsearch.core.query.SearchQuery;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
+import org.springframework.data.elasticsearch.core.query.*;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @SpringBootTest
 class ElasticSearchDemoApplicationTests {
@@ -37,7 +32,7 @@ class ElasticSearchDemoApplicationTests {
     private DemoRepository repository;
     private final Logger logger = LoggerFactory.getLogger(ElasticSearchDemoApplicationTests.class);
 
-    private NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withIndices("demo");
+    private NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();
 
     /**
      * 增
@@ -315,8 +310,8 @@ class ElasticSearchDemoApplicationTests {
         TermsAggregationBuilder termsAggregationBuilder = AggregationBuilders.terms("popularBrand").field("name.keyword");
         TermsAggregationBuilder termsAggregationBuilder1 = AggregationBuilders.terms("popularBrand1").field("nickName.keyword");
         nativeSearchQueryBuilder = nativeSearchQueryBuilder.addAggregation(termsAggregationBuilder).addAggregation(termsAggregationBuilder1);
-        SearchQuery searchQuery = nativeSearchQueryBuilder.build();
-        AggregatedPage<DemoDO> result = elasticsearchTemplate.queryForPage(searchQuery, DemoDO.class);
+        NativeSearchQuery searchQuery = nativeSearchQueryBuilder.build();
+        SearchHits<DemoDO> result = elasticsearchTemplate.search(searchQuery, DemoDO.class);
         Aggregations aggregations = result.getAggregations();
         //获取指定名称的聚合
         Terms terms = aggregations.get("popularBrand");
@@ -343,8 +338,8 @@ class ElasticSearchDemoApplicationTests {
     public void sum() {
         SumAggregationBuilder termsAggregationBuilder = AggregationBuilders.sum("popularBrand").field("age");
         nativeSearchQueryBuilder = nativeSearchQueryBuilder.addAggregation(termsAggregationBuilder);
-        SearchQuery searchQuery = nativeSearchQueryBuilder.build();
-        AggregatedPage<DemoDO> result = elasticsearchTemplate.queryForPage(searchQuery, DemoDO.class);
+        NativeSearchQuery searchQuery = nativeSearchQueryBuilder.build();
+        SearchHits<DemoDO> result = elasticsearchTemplate.search(searchQuery, DemoDO.class);
         Aggregations aggregations = result.getAggregations();
         //获取指定名称的聚合
         Sum terms = aggregations.get("popularBrand");
@@ -372,12 +367,13 @@ class ElasticSearchDemoApplicationTests {
             demoDO.setName(UUID.randomUUID().toString());
             demoDO.setNickName(UUID.randomUUID().toString());
             demoDO.setLastLoginDate(new Date());
-            IndexQuery indexQuery = new IndexQuery();
+            IndexQuery indexQuery = new IndexQueryBuilder().withObject(demoDO).build();
             indexQuery.setObject(demoDO);
             demoDOList.add(indexQuery);
             if (demoDOList.size() == 10000) {
                 long start = new Date().getTime();
-                elasticsearchTemplate.bulkIndex(demoDOList);
+                IndexCoordinates indexCoordinates = IndexCoordinates.of(DemoDO.INDEX_NAME);
+                elasticsearchTemplate.bulkIndex(demoDOList, indexCoordinates);
                 logger.info("第" + ((i / 10000) + 1) + "次, 耗时：" + (new Date().getTime() - start));
                 demoDOList.clear();
             }
@@ -391,12 +387,42 @@ class ElasticSearchDemoApplicationTests {
      */
     private void out(QueryBuilder queryBuilder) {
         nativeSearchQueryBuilder = nativeSearchQueryBuilder.withQuery(queryBuilder);
-        SearchQuery searchQuery = nativeSearchQueryBuilder.build();
-        List<DemoDO> demoDOList = elasticsearchTemplate.queryForList(searchQuery, DemoDO.class);
-        logger.info("总数：" + demoDOList.size());
-        for (DemoDO demoDO : demoDOList) {
+        NativeSearchQuery searchQuery = nativeSearchQueryBuilder.build();
+        SearchHits<DemoDO> demoDOList = elasticsearchTemplate.search(searchQuery, DemoDO.class);
+        logger.info("总数：" + Objects.requireNonNull(demoDOList.getAggregations()).asList().size());
+        for (SearchHit<DemoDO> demoDOSearchHit : demoDOList) {
+            DemoDO demoDO = demoDOSearchHit.getContent();
             System.out.println("id: " + demoDO.getId() + " name: " + demoDO.getName() + " age: " + demoDO.getAge() + " nickName: " + demoDO.getNickName());
         }
     }
 
+    @Test
+    public void test() {
+        QueryBuilder queryBuilder = QueryBuilders.matchPhraseQuery("memberId", "0007c0a59c59f3578b41c96ab5f99ace");
+        QueryBuilder queryBuilder1 = QueryBuilders.matchPhraseQuery("year", "2019");
+        QueryBuilder queryBuilder2 = QueryBuilders.matchPhraseQuery("month", "10");
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        boolQueryBuilder.must(queryBuilder).must(queryBuilder1).must(queryBuilder2);
+        NativeSearchQuery searchQuery = new NativeSearchQuery(boolQueryBuilder);
+        SearchHits<DwsLabelDO> dwsLabelDOSearchHits = elasticsearchTemplate.search(searchQuery, DwsLabelDO.class);
+        logger.info(String.valueOf(dwsLabelDOSearchHits.getTotalHits()));
+        System.out.println(dwsLabelDOSearchHits.getSearchHit(0).getContent().toString());
+    }
+
+    @Test
+    public void test1() {
+//        IdsQueryBuilder idsQueryBuilder = QueryBuilders.idsQuery();
+//        Query query = (new NativeSearchQueryBuilder()).withQuery(idsQueryBuilder).build();
+        IndexCoordinates indexCoordinates = IndexCoordinates.of("dws_label");
+//        elasticsearchTemplate.delete(query, DwsLabelDO.class, indexCoordinates);
+        List<IndexQuery> indexQueryList = new ArrayList<>();
+        DwsLabelDO dwsLabelDODelete = new DwsLabelDO();
+        dwsLabelDODelete.setUserId("0007c0a59c59f3578b41c96ab5f99ace");
+        dwsLabelDODelete.setYear("2019");
+        dwsLabelDODelete.setMonth("10");
+        elasticsearchTemplate.delete(dwsLabelDODelete);
+        IndexQuery indexQuery = new IndexQueryBuilder().withObject(dwsLabelDODelete).build();
+        indexQueryList.add(indexQuery);
+
+    }
 }
