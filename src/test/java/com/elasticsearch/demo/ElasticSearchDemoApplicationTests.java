@@ -389,7 +389,7 @@ class ElasticSearchDemoApplicationTests {
         nativeSearchQueryBuilder = nativeSearchQueryBuilder.withQuery(queryBuilder);
         NativeSearchQuery searchQuery = nativeSearchQueryBuilder.build();
         SearchHits<DemoDO> demoDOList = elasticsearchTemplate.search(searchQuery, DemoDO.class);
-        logger.info("总数：" + Objects.requireNonNull(demoDOList.getAggregations()).asList().size());
+        logger.info("总数：" + demoDOList.getTotalHits());
         for (SearchHit<DemoDO> demoDOSearchHit : demoDOList) {
             DemoDO demoDO = demoDOSearchHit.getContent();
             System.out.println("id: " + demoDO.getId() + " name: " + demoDO.getName() + " age: " + demoDO.getAge() + " nickName: " + demoDO.getNickName());
