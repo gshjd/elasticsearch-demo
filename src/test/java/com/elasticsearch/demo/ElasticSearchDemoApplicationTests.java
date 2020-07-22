@@ -151,7 +151,7 @@ class ElasticSearchDemoApplicationTests {
 
     @Test
     public void deleteIndex() {
-        elasticsearchTemplate.deleteIndex(DemoDO.class);
+        elasticsearchTemplate.delete(DemoDO.class);
     }
 
     /**
@@ -394,35 +394,5 @@ class ElasticSearchDemoApplicationTests {
             DemoDO demoDO = demoDOSearchHit.getContent();
             System.out.println("id: " + demoDO.getId() + " name: " + demoDO.getName() + " age: " + demoDO.getAge() + " nickName: " + demoDO.getNickName());
         }
-    }
-
-    @Test
-    public void test() {
-        QueryBuilder queryBuilder = QueryBuilders.matchPhraseQuery("memberId", "0007c0a59c59f3578b41c96ab5f99ace");
-        QueryBuilder queryBuilder1 = QueryBuilders.matchPhraseQuery("year", "2019");
-        QueryBuilder queryBuilder2 = QueryBuilders.matchPhraseQuery("month", "10");
-        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        boolQueryBuilder.must(queryBuilder).must(queryBuilder1).must(queryBuilder2);
-        NativeSearchQuery searchQuery = new NativeSearchQuery(boolQueryBuilder);
-        SearchHits<DwsLabelDO> dwsLabelDOSearchHits = elasticsearchTemplate.search(searchQuery, DwsLabelDO.class);
-        logger.info(String.valueOf(dwsLabelDOSearchHits.getTotalHits()));
-        System.out.println(dwsLabelDOSearchHits.getSearchHit(0).getContent().toString());
-    }
-
-    @Test
-    public void test1() {
-//        IdsQueryBuilder idsQueryBuilder = QueryBuilders.idsQuery();
-//        Query query = (new NativeSearchQueryBuilder()).withQuery(idsQueryBuilder).build();
-        IndexCoordinates indexCoordinates = IndexCoordinates.of("dws_label");
-//        elasticsearchTemplate.delete(query, DwsLabelDO.class, indexCoordinates);
-        List<IndexQuery> indexQueryList = new ArrayList<>();
-        DwsLabelDO dwsLabelDODelete = new DwsLabelDO();
-        dwsLabelDODelete.setUserId("0007c0a59c59f3578b41c96ab5f99ace");
-        dwsLabelDODelete.setYear("2019");
-        dwsLabelDODelete.setMonth("10");
-        elasticsearchTemplate.delete(dwsLabelDODelete);
-        IndexQuery indexQuery = new IndexQueryBuilder().withObject(dwsLabelDODelete).build();
-        indexQueryList.add(indexQuery);
-
     }
 }
