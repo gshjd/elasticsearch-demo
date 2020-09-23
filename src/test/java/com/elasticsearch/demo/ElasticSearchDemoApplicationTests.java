@@ -1,9 +1,11 @@
 package com.elasticsearch.demo;
 
 import com.elasticsearch.demo.dataobject.DemoDO;
-import com.elasticsearch.demo.dataobject.DwsLabelDO;
 import com.elasticsearch.demo.repository.DemoRepository;
-import org.elasticsearch.index.query.*;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.Operator;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
@@ -20,9 +22,15 @@ import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
-import org.springframework.data.elasticsearch.core.query.*;
+import org.springframework.data.elasticsearch.core.query.IndexQuery;
+import org.springframework.data.elasticsearch.core.query.IndexQueryBuilder;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 
 @SpringBootTest
 class ElasticSearchDemoApplicationTests {
@@ -84,11 +92,11 @@ class ElasticSearchDemoApplicationTests {
     }
 
     /**
-     * 精确查询
+     * 精确查询(字段分词，搜索文本不分词)
      */
     @Test
     public void matchPhraseQuery() {
-        QueryBuilder queryBuilder = QueryBuilders.matchPhraseQuery("name.keyword", "ae4be7fb-983e-429f-bd73-162b28bcf800");
+        QueryBuilder queryBuilder = QueryBuilders.matchPhraseQuery("name", "ae4be7fb-983e-429f-bd73-162b28bcf800");
         out(queryBuilder);
     }
 
